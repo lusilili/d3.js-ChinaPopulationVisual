@@ -1,0 +1,2554 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset='utf-8'>
+    <title>MultiViewCase</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <script type='text/javascript' src='./Resources/lib/d3.js'></script>
+    <script src='./Resources/lib/d3.layout.cloud.js'></script>
+    <style>
+        * {
+            margin: 0px;
+            padding: 0px;
+        }
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif; /* 设置全局字体 */
+            width: 100%;
+            height: 840px;
+            background-color: #f4f4f9; /* 使用更现代的浅灰色背景 */
+            /* background-color: #fae8dbd1; /* 更淡的陶土色 */
+            cursor: url('./Resources/images/cursor_China.png'), auto; /* 添加自定义鼠标指针 */
+        }
+        
+        a {
+            cursor: url('./Resources/images/Hand_China.png'), pointer; /* 添加自定义手指指针 */
+        }
+
+        button {
+            cursor: url('./Resources/images/Hand_China.png'), pointer; /* 添加自定义手指指针 */
+        }
+
+        .clickable {
+            cursor: url('./Resources/images/Hand_China.png'), pointer; /* 添加自定义手指指针 */
+        }
+
+
+        #title {
+            text-align: center;
+            height: 40px;
+            font-size: 30px;
+        }
+        
+        #view {
+            display: flex;
+            height: 800px;
+        }
+        
+        #leftview {
+            /* 左边占总宽度60% */
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #rightview {
+            /* 右边占总宽度40% */
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #topleft {
+            /* 左上占总高度70% */
+            flex: 6;
+            /* border: 1px dotted red; */
+        }
+        
+        #bottomleft {
+            /* 左下占总高度30% */
+            flex: 4;
+            /* border: 1px dotted red; */
+        }
+        
+        #topright {
+            /* 右上占总高度50% */
+            flex: 1;
+            /* border: 1px dotted red; */
+        }
+        
+        #bottomright {
+            /* 右下占总高度50% */
+            flex: 1;
+            /* border: 1px dotted red; */
+        }
+
+        #optionBar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            cursor: url('./Resources/images/Hand_China.png'), pointer; /* 添加自定义手指指针 */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .option {
+            padding: 10px 20px;
+            margin: 5px 0;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: url('./Resources/images/Hand_China.png'), pointer; /* 添加自定义手指指针 */
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .option:hover {
+            background-color: #e0e0e0;
+            border-color: #ccc;
+        }
+
+        .option.active {
+            background-color: #d0d0d0;
+            border-color: #bbb;
+        }
+
+        .sub-options {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            align-items: center;
+            cursor: url('./Resources/images/Hand_China.png'), pointer; /* 添加自定义手指指针 */
+        }
+
+        .sub-option {
+            padding: 5px 20px;
+            margin: 2px 0;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: url('./Resources/images/Hand_China.png'), pointer; /* 添加自定义手指指针 */
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .sub-option:hover {
+            background-color: #e0e0e0;
+            border-color: #ccc;
+        }
+
+        .sub-option.active {
+            background-color: #d0d0d0;
+            border-color: #bbb;
+        }
+
+        #compare-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            cursor: url('./Resources/images/cursor_China.png'), pointer; /* 添加自定义手指指针 */
+            z-index: 1000;
+        }
+
+        #compare-content {
+            position: relative;
+            width: 80%;
+            height: 80%;
+            margin: auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            overflow: auto;
+            display: flex;
+        }
+
+        #close-modal {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 30px;
+            cursor: url('./Resources/images/cursor_China.png'), pointer; /* 添加自定义手指指针 */
+        }
+
+        #comparison-options {
+            display: flex;
+            flex-direction: column;
+            width: 20%;
+        }
+
+        #comparison-options .option {
+            display: flex;
+            align-items: center;
+        }
+
+        #comparison-options .option input {
+            margin-right: 10px;
+        }
+
+        .heatmap-container {
+            width: 48%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .heatmap {
+            max-width: 100%;
+            max-height: 100%;
+            height: auto;
+            width: auto;
+        }
+
+        #search-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 5px 0;
+        }
+
+        #search-box {
+            padding: 10px;
+            font-size: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-right: 2px;
+        }
+
+        #search-btn {
+            padding: 10px 20px;
+            font-size: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        #search-btn:hover {
+            background-color: #45a049;
+        }
+
+        #optionBar {
+            width: 250px;
+            transition: width 0.3s ease;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #optionBar.collapsed {
+            width: 50px;
+        }
+
+        #optionBar.collapsed .option,
+        #optionBar.collapsed .sub-options,
+        #optionBar.collapsed #search-container {
+            display: none;
+        }
+
+        #toggle-sidebar-btn {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #toggle-sidebar-btn:hover {
+            background-color: #45a049;
+        }
+
+        #toggle-sidebar-btn.collapsed {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+
+<body>
+    <header id='title'>中国地区发展水平数据分析</header>
+    <main id='view'>
+        <div id="compare-modal" style="display:none;">
+            <div id="compare-content">
+                <span id="close-modal">&times;</span>
+                <div class="heatmap-container" id="left-comparison"></div>
+                <div class="heatmap-container" id="right-comparison"></div>
+                <!-- <div id="left-comparison" style="width:50%; float:left;"></div>
+                <div id="right-comparison" style="width:50%; float:left;"></div> -->
+                <div id="comparison-options">
+                    <div class="option" data-year="population">人口普查 (1953-2020)
+                        <div class="sub-options">
+                            <div class="sub-option" data-year="1953"><input type="checkbox" name="compare" value="1953">1953年</div>
+                            <div class="sub-option" data-year="1964"><input type="checkbox" name="compare" value="1964">1964年</div>
+                            <div class="sub-option" data-year="1982"><input type="checkbox" name="compare" value="1982">1982年</div>
+                            <div class="sub-option" data-year="1990"><input type="checkbox" name="compare" value="1990">1990年</div>
+                            <div class="sub-option" data-year="2000"><input type="checkbox" name="compare" value="2000">2000年</div>
+                            <div class="sub-option" data-year="2010"><input type="checkbox" name="compare" value="2010">2010年</div>
+                            <div class="sub-option" data-year="2020"><input type="checkbox" name="compare" value="2020">2020年</div>
+                        </div>
+                    </div>
+                    <div class="option" data-year="public_transportation">公共交通（2020年）
+                        <div class="sub-options">
+                            <div class="sub-option" data-year="bus"><input type="checkbox" name="compare" value="bus">公共汽电车运营数</div>
+                            <div class="sub-option" data-year="bus_route"><input type="checkbox" name="compare" value="bus_route">公共汽电车运营线路总长度</div>
+                            <div class="sub-option" data-year="bus_passengers"><input type="checkbox" name="compare" value="bus_passengers">公共汽电车客运总量</div>
+                            <div class="sub-option" data-year="rail"><input type="checkbox" name="compare" value="rail">轨道交通运营数</div>
+                            <div class="sub-option" data-year="rail_mileage"><input type="checkbox" name="compare" value="rail_mileage">轨道交通运营里程</div>
+                            <div class="sub-option" data-year="rail_passengers"><input type="checkbox" name="compare" value="rail_passengers">轨道交通运营总量</div>
+                        </div>
+                    </div>
+                    <div class="option" data-year="urban_facilities">城市设施水平 (2020年)
+                        <div class="sub-options">
+                            <div class="sub-option" data-year="water"><input type="checkbox" name="compare" value="water">城市供水普及率</div>
+                            <div class="sub-option" data-year="gas"><input type="checkbox" name="compare" value="gas">城市燃气普及率</div>
+                            <div class="sub-option" data-year="trans"><input type="checkbox" name="compare" value="trans">每万人拥有公共汽电车辆</div>
+                            <div class="sub-option" data-year="road"><input type="checkbox" name="compare" value="road">人均城市道路面积</div>
+                            <div class="sub-option" data-year="park"><input type="checkbox" name="compare" value="park">人均公园绿地面积</div>
+                            <div class="sub-option" data-year="wc"><input type="checkbox" name="compare" value="wc">每万人拥有公共厕所</div>
+                        </div>
+                    </div>
+                    <div class="option" data-year="water_supply">城市供水情况 (2020年)
+                        <div class="sub-options">
+                            <div class="sub-option" data-year="2020"><input type="checkbox" name="compare" value="2020">2020年</div>
+                        </div>
+                    </div>
+                    <div class="option" data-year="electricity_usage">用电量 (1995-2020年)
+                        <div class="sub-options">
+                            <div class="sub-option" data-year="1995"><input type="checkbox" name="compare" value="1995">1995年</div>
+                            <div class="sub-option" data-year="2000"><input type="checkbox" name="compare" value="2000">2000年</div>
+                            <div class="sub-option" data-year="2005"><input type="checkbox" name="compare" value="2005">2005年</div>
+                            <div class="sub-option" data-year="2010"><input type="checkbox" name="compare" value="2010">2010年</div>
+                            <div class="sub-option" data-year="2015"><input type="checkbox" name="compare" value="2015">2015年</div>
+                            <div class="sub-option" data-year="2019"><input type="checkbox" name="compare" value="2019">2019年</div>
+                            <div class="sub-option" data-year="2020"><input type="checkbox" name="compare" value="2020">2020年</div>
+                        </div>
+                    </div>
+                    <button id="compare-submit">对比</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id='optionBar'>
+            <button id="toggle-sidebar-btn"><<<</button>
+            <div id="search-container">
+                <input type="text" id="search-box" placeholder="搜索省份">
+                <button id="search-btn">搜索</button>
+            </div>
+            <div class="option" id="compare-btn">对比模式</div>
+            <div class="option" id="confirm-btn" style="display:none;">确认</div>
+            <div class="option" data-year="population">人口普查 (1953-2020) 👇</div>
+            <div class="sub-options" id="population-options">
+                <div class="sub-option" data-year="1953">1953年</div>
+                <div class="sub-option" data-year="1964">1964年</div>
+                <div class="sub-option" data-year="1982">1982年</div>
+                <div class="sub-option" data-year="1990">1990年</div>
+                <div class="sub-option" data-year="2000">2000年</div>
+                <div class="sub-option" data-year="2010">2010年</div>
+                <div class="sub-option" data-year="2020">2020年</div>
+            </div>
+            <div class="option" data-year="public_transportation">公共交通（2020年）👇</div>
+            <div class="sub-options" id="transportation-options">
+                <div class="sub-option" data-year="bus">公共汽电车运营数</div>
+                <div class="sub-option" data-year="bus_route">公共汽电车运营线路总长度</div>
+                <div class="sub-option" data-year="bus_passengers">公共汽电车客运总量</div>
+                <div class="sub-option" data-year="rail">轨道交通运营数</div>
+                <div class="sub-option" data-year="rail_mileage">轨道交通运营里程</div>
+                <div class="sub-option" data-year="rail_passengers">轨道交通运营总量</div>
+            </div>
+            <div class="option" data-year="urban_facilities">城市设施水平 (2020年)👇</div>
+            <div class="sub-options" id="facilities-options">
+                <div class="sub-option" data-year="water">城市供水普及率</div>
+                <div class="sub-option" data-year="gas">城市燃气普及率</div>
+                <div class="sub-option" data-year="trans">每万人拥有公共汽电车辆</div>
+                <div class="sub-option" data-year="road">人均城市道路面积</div>
+                <div class="sub-option" data-year="park">人均公园绿地面积</div>
+                <div class="sub-option" data-year="wc">每万人拥有公共厕所</div>
+            </div>
+            <div class="option" data-year="water_supply">城市供水情况 (2020年)👇</div>
+            <div class="sub-options" id="water-supply-options">
+                <div class="sub-option" data-year="2020">2020年</div>
+            </div>
+            <div class="option" data-year="electricity_usage">用电量 (1995-2020年)👇</div>
+            <div class="sub-options" id="electricity-usage-options">
+                <div class="sub-option" data-year="1995">1995年</div>
+                <div class="sub-option" data-year="2000">2000年</div>
+                <div class="sub-option" data-year="2005">2005年</div>
+                <div class="sub-option" data-year="2010">2010年</div>
+                <div class="sub-option" data-year="2015">2015年</div>
+                <div class="sub-option" data-year="2019">2019年</div>
+                <div class="sub-option" data-year="2020">2020年</div>
+            </div>
+        </div>
+        <div id='leftview'>
+            <div id='topleft'></div>
+            <div id='bottomleft'></div>
+        </div>
+        <div id='rightview'>
+            <div id='topright'></div>
+            <div id='bottomright'></div>
+        </div>
+    </main>
+    
+    <script type='text/javascript'>
+        const tooltip = d3.select('body')
+            .append('div')
+            .attr('class', 'tooltip')
+            .style('position', 'absolute')
+            .style('z-index', '10') //层级
+            .style('color', 'black')
+            .style('visibility', 'hidden') // 一开始设置为不可见
+            .style('text-anchor', 'middle')
+            .style('font-size', '20')
+            .text('')
+    
+        document.addEventListener('DOMContentLoaded', () => {
+            let isCompareMode = false;
+
+            const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+            toggleSidebarBtn.addEventListener('click', () => {
+                optionBar.classList.toggle('collapsed');
+                if (optionBar.classList.contains('collapsed')) {
+                    toggleSidebarBtn.innerText = '>>>';
+                } else {
+                    toggleSidebarBtn.innerText = '<<<';
+                }
+            });
+
+
+            const searchBox = document.getElementById('search-box');
+            const searchBtn = document.getElementById('search-btn');
+
+            searchBtn.addEventListener('click', function () {
+                const query = searchBox.value.trim();
+                if (query) {
+                    searchProvince(query);
+                }
+            });
+
+            function searchProvince(query) {
+                const provinceData = {
+                    "北京": { /* 数据 */ },
+                    "上海": { /* 数据 */ },
+                    // 添加其他省份的数据
+                };
+
+                const result = provinceData[query];
+                if (result) {
+                    displayProvinceData(result);
+                } else {
+                    alert('未找到相关数据');
+                }
+            }
+
+            const compareBtn = document.getElementById('compare-btn');
+            const compareModal = document.getElementById('compare-modal');
+            const closeModal = document.getElementById('close-modal');
+            const compareSubmit = document.getElementById('compare-submit');
+
+            compareBtn.addEventListener('click', function () {
+                isCompareMode = !isCompareMode;
+                if (isCompareMode) {
+                    compareModal.style.display = 'block';
+                } else {
+                    compareModal.style.display = 'none';
+                }
+            });
+
+            closeModal.addEventListener('click', function () {
+                compareModal.style.display = 'none';
+                isCompareMode = false;
+                document.querySelectorAll('.sub-option input').forEach(input => input.checked = false);
+            });
+
+            compareSubmit.addEventListener('click', function () {
+                const selectedOptions = [];
+                document.querySelectorAll('.sub-option input:checked').forEach(input => {
+                    selectedOptions.push({
+                        year: input.value,
+                        parent: input.closest('.option').getAttribute('data-year')
+                    });
+                });
+
+                if (selectedOptions.length === 2) {
+                    showComparison(selectedOptions[0], selectedOptions[1]);
+                } else {
+                    alert("请选择两个数据项进行对比。");
+                }
+            });
+
+        // 展开侧边栏的选项
+        document.querySelectorAll('#optionBar .option').forEach(option => {
+            option.addEventListener('click', function () {
+                document.querySelectorAll('#optionBar .option').forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+                
+                // 关闭所有其他子选项
+                document.querySelectorAll('.sub-options').forEach(sub => {
+                    if (sub !== this.nextElementSibling) {
+                        sub.style.display = 'none';
+                    }
+                });
+
+                // 展开当前子选项
+                const subOptions = this.nextElementSibling;
+                if (subOptions && subOptions.classList.contains('sub-options')) {
+                    subOptions.style.display = (subOptions.style.display === 'flex') ? 'none' : 'flex';
+                }
+            });
+        });
+
+        // 展开弹窗中的选项
+        document.querySelectorAll('#compare-content .option').forEach(option => {
+            option.addEventListener('click', function () {
+                const subOptions = this.querySelector('.sub-options');
+                if (subOptions) {
+                    subOptions.style.display = (subOptions.style.display === 'flex') ? 'none' : 'flex';
+                }
+            });
+        });
+
+        document.querySelectorAll('.sub-option').forEach(option => {
+            option.addEventListener('click', function (event) {
+                if (isCompareMode) {
+                    event.stopPropagation(); // 防止冒泡以保持checkbox的选中状态
+                } else {
+                    document.querySelectorAll('.sub-option').forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    const year = this.getAttribute('data-year');
+                    const parent = this.parentElement.id;
+
+                    d3.selectAll('svg').remove(); // 清空之前的可视化内容
+
+                    renderSelection({ year, parent }, 'topleft');
+                }
+            });
+        });
+
+        function showComparison(first, second) {
+            compareModal.style.display = 'block';
+
+            const leftComparison = document.getElementById('left-comparison');
+            const rightComparison = document.getElementById('right-comparison');
+            leftComparison.innerHTML = `<img src="./Resources/heatmap/${first.parent}_${first.year}.png" class="heatmap" alt="${first.parent} ${first.year} 热力图">`;
+            rightComparison.innerHTML = `<img src="./Resources/heatmap/${second.parent}_${second.year}.png" class="heatmap" alt="${second.parent} ${second.year} 热力图">`;
+        }
+
+        function renderSelection(selection, target) {
+            const year = selection.year;
+            const parent = selection.parent;
+
+            if (parent === 'population-options') {
+                renderMap(year, 'population');
+                renderline();
+                renderCom(year);
+                renderbar2('四川');
+            } else if (parent === 'electricity-usage-options') {
+                renderMap(year, 'electricity');
+                renderElectricityGrowth();
+                renderElectricityAreaChart();
+            } else if (parent === 'facilities-options') {
+                renderMap(year, 'facilities');
+            } else if (parent === 'transportation-options') {
+                renderMap(year, 'transportation');
+                renderPieForTransportation('全国');
+                renderTransportationGrowth();
+            } else if(parent === 'water-supply-options'){
+                renderMap(year, 'water_supply');
+                renderPieForWater('全国');
+                renderBarComplexForWater();
+                renderAreaChartForwater();
+            }
+        }
+
+        function renderComparison(selection, target) {
+            const year = selection.year;
+            const parent = selection.parent;
+
+            const container = document.getElementById(target);
+            container.innerHTML = ""; // 清空之前的内容
+
+            const h = document.getElementById(target).clientHeight;
+            const w = document.getElementById(target).clientWidth;
+            const svg = d3.select(`#${target}`)
+                .append('svg')
+                .attr('id', `map-${target}`)
+                .attr('width', `${w}px`)
+                .attr('height', `${h}px`);
+
+            const margin = {
+                top: 10,
+                left: 10,
+                bottom: 10,
+                right: 10
+            };
+            const innerWidth = w - margin.left - margin.right;
+            const innerHeight = h - margin.top - margin.bottom;
+
+            const projection = d3.geoMercator()
+                .center([103, 39])
+                .scale(600)
+                .translate([innerWidth / 2, innerHeight / 2]);
+
+            const path = d3.geoPath().projection(projection);
+
+            if (!isNaN(year)) {
+                svg.append('g').attr('transform', `translate(${w / 2 - 50},${h / 2 - 185})`)
+                    .append('rect')
+                    .attr('fill', "#40d8ab")
+                    .attr('width', '110')
+                    .attr('height', '50');
+
+                svg.append('g').attr('transform', `translate(${w / 2 - 45},${h / 2 - 150})`)
+                    .append('text')
+                    .attr('fill', '#faf7f4')
+                    .attr('font-size', 30)
+                    .text(`${year}年`);
+            }
+        }
+    });
+        
+        renderMap('1953')
+        renderline()
+        renderCom('1953')
+        renderbar2('四川')
+
+        function Regional_data_population(province, year, svg, path) {
+            d3.csv('./Resources/data/population7.csv').then(function(data) {
+                console.log("Population Data:", data);  // 打印人口数据
+                // 获取特定年份的人口值并过滤掉值为0的项
+                let populationValues = data.map(d => {
+                    if (year == '1953') return +d.第一次人口普查;
+                    else if (year == '1964') return +d.第二次人口普查;
+                    else if (year == '1982') return +d.第三次人口普查;
+                    else if (year == '1990') return +d.第四次人口普查;
+                    else if (year == '2000') return +d.第五次人口普查;
+                    else if (year == '2010') return +d.第六次人口普查;
+                    else if (year == '2020') return +d.第七次人口普查;
+                }).filter(value => value !== 0); // 过滤掉值为0的项
+
+                // 筛选出populationValues中的最小值和第二大值
+                let minPopulationValue = Math.min(...populationValues);
+                let sortedPopulationValues = populationValues.sort((a, b) => b - a);
+                let maxPopulationValue = sortedPopulationValues[1]; // 获取第二大值
+                console.log("Minimum Population Value:", minPopulationValue);
+                console.log("Second Maximum Population Value:", maxPopulationValue);
+
+                // 定义自定义颜色比例尺
+                let colorScale = d3.scaleSequential(d3.interpolateReds)
+                    .domain([minPopulationValue, maxPopulationValue]);
+                d3.json('./Resources/data/china.geojson').then(mapData => {
+                    svg.selectAll('path').remove(); // 清空之前的路径
+
+                    svg.selectAll('path')
+                        .data(mapData.features)
+                        .enter()
+                        .append('path')
+                        .attr('d', path)
+                        .attr('opacity', 0.8)
+                        .attr('fill', d => {
+                            let regionData = data.find(region => region.地区 === d.properties.name);
+                            let value = 0;
+                            if (regionData) {
+                                if (year == '1953') value = +regionData.第一次人口普查;
+                                else if (year == '1964') value = +regionData.第二次人口普查;
+                                else if (year == '1982') value = +regionData.第三次人口普查;
+                                else if (year == '1990') value = +regionData.第四次人口普查;
+                                else if (year == '2000') value = +regionData.第五次人口普查;
+                                else if (year == '2010') value = +regionData.第六次人口普查;
+                                else if (year == '2020') value = +regionData.第七次人口普查;
+                            }
+                            return value !== 0 ? colorScale(value) : '#ccc'; // 如果没有数据，使用默认颜色
+                        })
+                        .attr('stroke', '#fff')
+                        .attr('stroke-width', 1)
+                        .on('mouseenter', function(event, d) {
+                            d3.select(this).attr('opacity', 1);
+                            province = d3.select(this)._groups[0][0].__data__.properties.name;
+                            d3.select("#pie").remove();
+                            d3.select('#bar2').remove();
+                            tooltip.style('visibility', 'visible')
+                                .style('left', `${event.pageX + 20}px`)
+                                .style('top', `${event.pageY + 20}px`);
+                            renderTooltipContent(province, year);
+                            renderbar2(province); // 重新绘制柱状图
+                        })
+                        .on('mouseleave', function(d) {
+                            d3.select(this).attr('opacity', 0.8);
+                            tooltip.style('visibility', 'hidden');
+                        });
+                });
+
+                
+                // 定义一个函数来更新 tooltip 内容
+                function renderTooltipContent(province, year) {
+                    for (let i in data) {
+                        if (data[i].地区 == province) {
+                            if (year == '1953')
+                                tooltip.text(`${province}总人口数:${data[i].第一次人口普查}`);
+                            else if (year == '1964')
+                                tooltip.text(`${province}总人口数:${data[i].第二次人口普查}`);
+                            else if (year == '1982')
+                                tooltip.text(`${province}总人口数:${data[i].第三次人口普查}`);
+                            else if (year == '1990')
+                                tooltip.text(`${province}总人口数:${data[i].第四次人口普查}`);
+                            else if (year == '2000')
+                                tooltip.text(`${province}总人口数:${data[i].第五次人口普查}`);
+                            else if (year == '2010')
+                                tooltip.text(`${province}总人口数:${data[i].第六次人口普查}`);
+                            else if (year == '2020')
+                                tooltip.text(`${province}总人口数:${data[i].第七次人口普查}`);
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+
+        function Regional_data_electricity(province, year, svg, path) {
+            d3.csv('./Resources/data/electricity_usage.csv').then(function(data) {
+                console.log("Electricity Data:", data);  // 打印电力数据
+                // 获取特定年份的电力值并过滤掉值为0的项
+                let electricityValues = data.map(d => {
+                    if (year == '1995') return +d['1995'];
+                    else if (year == '2000') return +d['2000'];
+                    else if (year == '2005') return +d['2005'];
+                    else if (year == '2010') return +d['2010'];
+                    else if (year == '2015') return +d['2015'];
+                    else if (year == '2019') return +d['2019'];
+                    else if (year == '2020') return +d['2020'];
+                }).filter(value => value !== 0); // 过滤掉值为0的项
+
+                // 筛选出electricityValues中的最小值和第二大值
+                let minElectricityValue = Math.min(...electricityValues);
+                let sortedElectricityValues = electricityValues.sort((a, b) => b - a);
+                let maxElectricityValue = sortedElectricityValues[1]; // 获取第二大值
+                console.log("Minimum Electricity Value:", minElectricityValue);
+                console.log("Second Maximum Electricity Value:", maxElectricityValue);
+
+                // 定义自定义颜色比例尺
+                let colorScale = d3.scaleSequential(d3.interpolateYlOrBr)
+                    .domain([minElectricityValue, maxElectricityValue]);
+                d3.json('./Resources/data/china.geojson').then(mapData => {
+                    svg.selectAll('path').remove(); // 清空之前的路径
+
+                    svg.selectAll('path')
+                        .data(mapData.features)
+                        .enter()
+                        .append('path')
+                        .attr('d', path)
+                        .attr('opacity', 0.8)
+                        .attr('fill', d => {
+                            let regionData = data.find(region => region.地区 === d.properties.name);
+                            let value = 0;
+                            if (regionData) {
+                                if (year == '1995') value = +regionData['1995'];
+                                else if (year == '2000') value = +regionData['2000'];
+                                else if (year == '2005') value = +regionData['2005'];
+                                else if (year == '2010') value = +regionData['2010'];
+                                else if (year == '2015') value = +regionData['2015'];
+                                else if (year == '2019') value = +regionData['2019'];
+                                else if (year == '2020') value = +regionData['2020'];
+                            }
+                            return value !== 0 ? colorScale(value) : '#ccc'; // 如果没有数据，使用默认颜色
+                        })
+                        .attr('stroke', '#fff')
+                        .attr('stroke-width', 1)
+                        .on('mouseenter', function(event, d) {
+                            d3.select(this).attr('opacity', 1);
+                            province = d3.select(this)._groups[0][0].__data__.properties.name;
+                            d3.select("#pie").remove();
+                            d3.select('#bar2').remove();
+                            tooltip.style('visibility', 'visible')
+                                .style('left', `${event.pageX + 20}px`)
+                                .style('top', `${event.pageY + 20}px`);
+                            renderTooltipContent(province, year);
+                            draw_electricity_LineChart(province); // 重新绘制柱状图
+                        })
+                        .on('mouseleave', function(d) {
+                            d3.select(this).attr('opacity', 0.8);
+                            tooltip.style('visibility', 'hidden');
+                        });
+                });
+
+                // 定义一个函数来更新 tooltip 内容
+                function renderTooltipContent(province, year) {
+                    for (let i in data) {
+                        if (data[i].地区 == province) {
+                            if (year == '1995')
+                                tooltip.text(`${province}总用电量:${data[i]['1995']} 亿千瓦时`);
+                            else if (year == '2000')
+                                tooltip.text(`${province}总用电量:${data[i]['2000']} 亿千瓦时`);
+                            else if (year == '2005')
+                                tooltip.text(`${province}总用电量:${data[i]['2005']} 亿千瓦时`);
+                            else if (year == '2010')
+                                tooltip.text(`${province}总用电量:${data[i]['2010']} 亿千瓦时`);
+                            else if (year == '2015')
+                                tooltip.text(`${province}总用电量:${data[i]['2015']} 亿千瓦时`);
+                            else if (year == '2019')
+                                tooltip.text(`${province}总用电量:${data[i]['2019']} 亿千瓦时`);
+                            else if (year == '2020')
+                                tooltip.text(`${province}总用电量:${data[i]['2020']} 亿千瓦时`);
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+
+        function Regional_data_transportation(province, metric, svg, path) {
+            d3.csv('./Resources/data/public_transportation.csv').then(function(data) {
+                console.log("Transportation Data:", data);  // 打印公共交通数据
+
+                // 获取特定交通指标的值并过滤掉值为0的项
+                let transportationValues = data.map(d => {
+                    if (metric === 'bus') return +d['公共汽电车运营数'];
+                    else if (metric === 'bus_route') return +d['运营线路总长度'];
+                    else if (metric === 'bus_passengers') return +d['公共汽电车客运总量'];
+                    else if (metric === 'rail') return +d['轨道交通运营数'];
+                    else if (metric === 'rail_mileage') return +d['轨道交通运营里程'];
+                    else if (metric === 'rail_passengers') return +d['轨道交通客运总量'];
+                }).filter(value => value !== 0); // 过滤掉值为0的项
+
+                // 筛选出transportationValues中的最小值和第二大值
+                let minTransportationValue = Math.min(...transportationValues);
+                let sortedTransportationValues = transportationValues.sort((a, b) => b - a);
+                let secondMaxTransportationValue = sortedTransportationValues[1]; // 获取第二大值
+                console.log("Minimum Transportation Value:", minTransportationValue);
+                console.log("Second Maximum Transportation Value:", secondMaxTransportationValue);
+
+                // 定义自定义颜色比例尺
+                let colorScale = d3.scaleSequential(d3.interpolateOranges)
+                    .domain([minTransportationValue, secondMaxTransportationValue]);
+                
+                d3.json('./Resources/data/china.geojson').then(mapData => {
+                    svg.selectAll('path').remove(); // 清空之前的路径
+
+                    svg.selectAll('path')
+                        .data(mapData.features)
+                        .enter()
+                        .append('path')
+                        .attr('d', path)
+                        .attr('opacity', 0.8)
+                        .attr('fill', d => {
+                            let regionData = data.find(region => region.地区 === d.properties.name);
+                            let value = 0;
+                            if (regionData) {
+                                if (metric === 'bus') value = +regionData['公共汽电车运营数'];
+                                else if (metric === 'bus_route') value = +regionData['运营线路总长度'];
+                                else if (metric === 'bus_passengers') value = +regionData['公共汽电车客运总量'];
+                                else if (metric === 'rail') value = +regionData['轨道交通运营数'];
+                                else if (metric === 'rail_mileage') value = +regionData['轨道交通运营里程'];
+                                else if (metric === 'rail_passengers') value = +regionData['轨道交通客运总量'];
+                            }
+                            return value !== 0 ? colorScale(value) : '#ccc'; // 如果没有数据，使用默认颜色
+                        })
+                        .attr('stroke', '#fff')
+                        .attr('stroke-width', 1)
+                        .on('mouseenter', function(event, d) {
+                            d3.select(this).attr('opacity', 1);
+                            province = d3.select(this)._groups[0][0].__data__.properties.name;
+                            tooltip.style('visibility', 'visible')
+                                .style('left', `${event.pageX + 20}px`)
+                                .style('top', `${event.pageY + 20}px`);
+                            renderTooltipContent(province, metric);
+                            renderPieForTransportation(province);
+                        })
+                        .on('mouseleave', function(d) {
+                            d3.select(this).attr('opacity', 0.8);
+                            tooltip.style('visibility', 'hidden');
+                        });
+                });
+
+                // 定义一个函数来更新 tooltip 内容
+                function renderTooltipContent(province, metric) {
+                    for (let i in data) {
+                        if (data[i].地区 == province) {
+                            if (metric === 'bus')
+                                tooltip.text(`${province}公共汽电车运营数: ${data[i]['公共汽电车运营数']}`);
+                            else if (metric === 'bus_route')
+                                tooltip.text(`${province}公共汽电车运营线路总长度: ${data[i]['运营线路总长度']} 公里`);
+                            else if (metric === 'bus_passengers')
+                                tooltip.text(`${province}公共汽电车客运总量: ${data[i]['公共汽电车客运总量']} 万人次`);
+                            else if (metric === 'rail')
+                                tooltip.text(`${province}轨道交通运营数: ${data[i]['轨道交通运营数']}`);
+                            else if (metric === 'rail_mileage')
+                                tooltip.text(`${province}轨道交通运营里程: ${data[i]['轨道交通运营里程']} 公里`);
+                            else if (metric === 'rail_passengers')
+                                tooltip.text(`${province}轨道交通客运总量: ${data[i]['轨道交通客运总量']} 万人次`);
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+
+        function draw_electricity_LineChart(province) {
+            // 固定绘图大小
+            const width = 400;
+            const height = 400;
+            const margin = { top: 50, right: 50, bottom: 50, left: 50 };
+
+            // 移除之前的SVG容器和所有子元素
+            d3.select('#topright').selectAll('svg').remove();
+
+            // 创建新的SVG容器
+            const svg = d3.select('#topright')
+                .append('svg')
+                .attr('id', 'line') // 设置SVG的ID为line
+                .attr('width', width + margin.left + margin.right) // 设置SVG宽度
+                .attr('height', height + margin.top + margin.bottom); // 设置SVG高度
+
+            // 添加数据
+            d3.csv('./Resources/data/electricity_usage.csv').then(function(data) {
+                const years = Object.keys(data[0]).filter(key => key !== '地区'); // 获取所有年份
+
+                const provinceData = data.find(d => d.地区 === province); // 找到指定省份的数据
+
+                const provinceDataArray = years.map(year => +provinceData[year]); // 获取指定省份的每年数据
+
+                // 定义X轴比例尺
+                const xScale = d3.scaleBand()
+                    .domain(years)
+                    .range([0, width])
+                    .padding(0.1);
+
+                // 定义Y轴比例尺
+                const yScale = d3.scaleLinear()
+                    .domain([0, d3.max(provinceDataArray)])
+                    .range([height, 0]);
+
+                // 绘制折线路径
+                svg.append('g')
+                    .attr('transform', `translate(${margin.left}, ${margin.top})`)
+                    .selectAll(".line")
+                    .data([provinceDataArray])
+                    .enter().append("path")
+                    .attr("class", "line")
+                    .attr("fill", "none")
+                    .attr("stroke", "steelblue")
+                    .attr("stroke-width", 2)
+                    .attr("d", d3.line()
+                        .x((d, i) => xScale(years[i]) + xScale.bandwidth() / 2)
+                        .y(d => yScale(d))
+                        .curve(d3.curveMonotoneX)
+                    );
+
+                // 添加X轴
+                svg.append('g')
+                    .attr('transform', `translate(${margin.left}, ${height + margin.top})`)
+                    .call(d3.axisBottom(xScale).tickSize(0))
+                    .selectAll("text")
+                    .style("text-anchor", "middle")
+                    .attr("dy", "1em");
+
+                // 添加Y轴
+                svg.append('g')
+                    .attr('transform', `translate(${margin.left}, ${margin.top})`)
+                    .call(d3.axisLeft(yScale).ticks(5).tickSize(0))
+                    .selectAll(".tick line")
+                    .attr("stroke", "#ddd");
+
+                // 添加X轴标签
+                svg.append('text')
+                    .attr('transform', `translate(${margin.left + width / 2}, ${height + margin.top + 30})`)
+                    .style('text-anchor', 'middle')
+                    .text('年份');
+
+                // 添加Y轴标签
+                svg.append('text')
+                    .attr('transform', `translate(${margin.left - 40}, ${margin.top + height / 2}) rotate(-90)`)
+                    .attr('dy', '1em')
+                    .style('text-anchor', 'middle')
+                    .text('用电量 (亿千瓦时)');
+
+                // 添加数据标签
+                svg.selectAll("text.label")
+                    .data(provinceDataArray)
+                    .enter().append("text")
+                    .attr("class", "label")
+                    .attr("x", (d, i) => xScale(years[i]) + xScale.bandwidth() / 2 + margin.left)
+                    .attr("y", d => yScale(d) - 10 + margin.top)
+                    .attr("text-anchor", "middle")
+                    .text(d => d.toFixed(2));
+
+                // 添加标题
+                svg.append('text')
+                    .attr('x', margin.left + width / 2)
+                    .attr('y', margin.top - 10)
+                    .attr('text-anchor', 'middle')
+                    .style('font-size', '16px')
+                    .text(`${province} 用电量折线图`);
+            });
+        }
+
+
+
+        function Regional_data_urban_facilities(province, facility, svg, path) {
+            d3.csv('./Resources/data/urban_facilities.csv').then(function(data) {
+                console.log("Urban Facilities Data:", data);  // 打印城市设施情况数据
+
+                // 获取特定设施的值并过滤掉值为0的项
+                let facilityValues = data.map(d => {
+                    if (facility === 'water') return +d['城市供水普及率(%)'];
+                    else if (facility === 'gas') return +d['城市燃气普及率(%)'];
+                    else if (facility === 'trans') return +d['每万人拥有公共汽电车辆(标台)'];
+                    else if (facility === 'road') return +d['人均城市道路面积(平方米)'];
+                    else if (facility === 'park') return +d['人均公园绿地面积(平方米)'];
+                    else if (facility === 'wc') return +d['每万人拥有公共厕所(座)'];
+                }).filter(value => value !== 0); // 过滤掉值为0的项
+
+                // 筛选出facilityValues中的最小值和最大值
+                let minFacilityValue = Math.min(...facilityValues);
+                let maxFacilityValue = Math.max(...facilityValues);
+                console.log("Minimum Facility Value:", minFacilityValue);
+                console.log("Maximum Facility Value:", maxFacilityValue);
+
+                // 定义自定义颜色比例尺
+                let colorScale = d3.scaleSequential(d3.interpolateGreens)
+                    .domain([minFacilityValue, maxFacilityValue]);
+                
+                d3.json('./Resources/data/china.geojson').then(mapData => {
+                    svg.selectAll('path').remove(); // 清空之前的路径
+
+                    svg.selectAll('path')
+                        .data(mapData.features)
+                        .enter()
+                        .append('path')
+                        .attr('d', path)
+                        .attr('opacity', 0.8)
+                        .attr('fill', d => {
+                            let regionData = data.find(region => region.地区 === d.properties.name);
+                            let value = 0;
+                            if (regionData) {
+                                if (facility === 'water') value = +regionData['城市供水普及率(%)'];
+                                else if (facility === 'gas') value = +regionData['城市燃气普及率(%)'];
+                                else if (facility === 'trans') value = +regionData['每万人拥有公共汽电车辆(标台)'];
+                                else if (facility === 'road') value = +regionData['人均城市道路面积(平方米)'];
+                                else if (facility === 'park') value = +regionData['人均公园绿地面积(平方米)'];
+                                else if (facility === 'wc') value = +regionData['每万人拥有公共厕所(座)'];
+                            }
+                            return value !== 0 ? colorScale(value) : '#ccc'; // 如果没有数据，使用默认颜色
+                        })
+                        .attr('stroke', '#fff')
+                        .attr('stroke-width', 1)
+                        .on('mouseenter', function(event, d) {
+                            d3.select(this).attr('opacity', 1);
+                            province = d3.select(this)._groups[0][0].__data__.properties.name;
+                            tooltip.style('visibility', 'visible')
+                                .style('left', `${event.pageX + 20}px`)
+                                .style('top', `${event.pageY + 20}px`);
+                            renderTooltipContent(province, facility);
+                            d3.select("#Facilities_bar").remove(); // 清除之前的柱状图
+                            d3.select("#Facilities_scatter").remove();
+                            Urban_Facilities_bar(province);
+                            Urban_Facilities_scatter(province);
+                        })
+                        .on('mouseleave', function(d) {
+                            d3.select(this).attr('opacity', 0.8);
+                            tooltip.style('visibility', 'hidden');
+                        });
+                });
+
+                // 定义一个函数来更新 tooltip 内容
+                function renderTooltipContent(province, facility) {
+                    for (let i in data) {
+                        if (data[i].地区 == province) {
+                            let facilitiesText = `${province}城市设施:\n`;
+                            if (facility === 'water') {
+                                facilitiesText += `城市供水普及率(%): ${data[i]['城市供水普及率(%)']}`;
+                            } else if (facility === 'gas') {
+                                facilitiesText += `城市燃气普及率(%): ${data[i]['城市燃气普及率(%)']}`;
+                            } else if (facility === 'trans') {
+                                facilitiesText += `每万人拥有公共汽电车辆(标台): ${data[i]['每万人拥有公共汽电车辆(标台)']}`;
+                            } else if (facility === 'road') {
+                                facilitiesText += `人均城市道路面积(平方米): ${data[i]['人均城市道路面积(平方米)']}`;
+                            } else if (facility === 'park') {
+                                facilitiesText += `人均公园绿地面积(平方米): ${data[i]['人均公园绿地面积(平方米)']}`;
+                            } else if (facility === 'wc') {
+                                facilitiesText += `每万人拥有公共厕所(座): ${data[i]['每万人拥有公共厕所(座)']}`;
+                            }
+                            tooltip.text(facilitiesText);
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+
+        function Regional_data_water_supply(province, year, svg, path) {
+            d3.csv('./Resources/data/water_supply.csv').then(function(data) {
+                console.log("Water Supply Data:", data);  // 打印供水数据
+                // 获取全年供水总量的值并过滤掉值为0的项
+                let waterSupplyValues = data.map(d => +d['全年供水总量(万立方米)']).filter(value => value !== 0); // 过滤掉值为0的项
+
+                // 筛选出waterSupplyValues中的最小值和第二大值
+                let minWaterSupplyValue = Math.min(...waterSupplyValues);
+                let sortedWaterSupplyValues = waterSupplyValues.sort((a, b) => b - a);
+                let maxWaterSupplyValue = sortedWaterSupplyValues[1]; // 获取第二大值
+                console.log("Minimum Water Supply Value:", minWaterSupplyValue);
+                console.log("Second Maximum Water Supply Value:", maxWaterSupplyValue);
+
+                // 定义自定义颜色比例尺
+                let colorScale = d3.scaleSequential(d3.interpolateBlues)
+                    .domain([minWaterSupplyValue, maxWaterSupplyValue]);
+                d3.json('./Resources/data/china.geojson').then(mapData => {
+                    svg.selectAll('path').remove(); // 清空之前的路径
+
+                    svg.selectAll('path')
+                        .data(mapData.features)
+                        .enter()
+                        .append('path')
+                        .attr('d', path)
+                        .attr('opacity', 0.8)
+                        .attr('fill', d => {
+                            let regionData = data.find(region => region.地区 === d.properties.name);
+                            let value = 0;
+                            if (regionData) {
+                                value = +regionData['全年供水总量(万立方米)'];
+                            }
+                            return value !== 0 ? colorScale(value) : '#ccc'; // 如果没有数据，使用默认颜色
+                        })
+                        .attr('stroke', '#fff')
+                        .attr('stroke-width', 1)
+                        .on('mouseenter', function(event, d) {
+                            d3.select(this).attr('opacity', 1);
+                            province = d3.select(this)._groups[0][0].__data__.properties.name;
+                            d3.select("#pie").remove();
+                            d3.select('#bar2').remove();
+                            tooltip.style('visibility', 'visible')
+                                .style('left', `${event.pageX + 20}px`)
+                                .style('top', `${event.pageY + 20}px`);
+                            renderTooltipContent(province, year);
+                            renderPieForWater(province); // 重新绘制柱状图
+                        })
+                        .on('mouseleave', function(d) {
+                            d3.select(this).attr('opacity', 0.8);
+                            tooltip.style('visibility', 'hidden');
+                        });
+                });
+
+                // 定义一个函数来更新 tooltip 内容
+                function renderTooltipContent(province, year) {
+                    for (let i in data) {
+                        if (data[i].地区 == province) {
+                            tooltip.text(`${province}全年供水总量:${data[i]['全年供水总量(万立方米)']} 万立方米`);
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+
+        //绘制交通饼状图
+        function renderPieForTransportation(province) {
+            const h = document.getElementById('topright').clientHeight;
+            const w = document.getElementById('topright').clientWidth;
+            // 移除之前的饼图
+            d3.select('#rose').remove();
+            const svg = d3.select('#topright')
+                .append('svg')
+                .attr('id', 'rose')
+                .attr('width', `${w}px`)
+                .attr('height', `${h}px`);
+
+            d3.csv('./Resources/data/public_transportation.csv').then(function(data) {
+                for (let i in data) {
+                    if (data[i].地区 == province) {
+                        const pie = d3.pie()
+                            .value(d => d.value)
+                            .sort(null)
+                            .padAngle(0.02);
+
+                        const color = d3.scaleOrdinal(d3.schemeCategory10);
+                        const length = 2; // 圆弧数量
+                        const pieData = [data[i].公共汽电车运营数, data[i].轨道交通运营数];
+                        const sum = d3.sum(pieData);
+                        const dataset1 = [{
+                            name: `公共汽电车运营数`,
+                            value: data[i].公共汽电车运营数,
+                            ratio: `${Math.round((+data[i].公共汽电车运营数) / (+sum) * 10000) / 100}%`
+                        }, {
+                            name: `轨道交通运营数`,
+                            value: data[i].轨道交通运营数,
+                            ratio: `${Math.round((+data[i].轨道交通运营数) / (+sum) * 10000) / 100}%`
+                        }];
+
+                        const color1 = ['#d73027', '#fc8d59']; // 使用红色相关的颜色
+                        const RoseChart1 = svg.append('g')
+                            .attr('transform', 'translate(250,200)'); // 向右移动并稍微放大饼图位置
+                        const pie_data1 = pie(dataset1);
+
+                        const arc1 = d3.arc()
+                            .outerRadius(120) // 稍微放大饼图
+                            .innerRadius(60)
+                            .cornerRadius(5);
+
+                        const slices1 = RoseChart1.selectAll('path')
+                            .data(pie_data1)
+                            .enter()
+                            .append('path')
+                            .attr('fill', function(d, i) {
+                                return color1[d.index];
+                            })
+                            .attr('d', d => arc1(d));
+
+                        const label1 = RoseChart1.selectAll('text')
+                            .data(pie_data1)
+                            .enter()
+                            .append('text')
+                            .attr('fill', 'black')
+                            .attr('transform', d => `translate(${arc1.centroid(d)})`) // 计算平面质心位置
+                            .attr('text-anchor', 'middle')
+                            .text(d => d.data.ratio);
+
+                        const tips1 = svg.append('g')
+                            .attr('transform', 'translate(50,40)');
+                        const tip1 = tips1.selectAll('rect')
+                            .data(pie_data1)
+                            .enter()
+                            .append('rect')
+                            .attr('fill', function(d, i) {
+                                return color1[i];
+                            })
+                            .attr('width', '150') // 拓宽图例
+                            .attr('height', '50')
+                            .attr('transform', (d, i) => {
+                                let translate = [i * 150, 0]; // 调整间距
+                                return 'translate(' + translate + ')';
+                            });
+
+                        const tip_text1 = svg.append('g').attr('transform', 'translate(125,60)').selectAll('text')
+                            .data(pie_data1)
+                            .enter()
+                            .append('text')
+                            .attr('fill', 'white')
+                            .attr('transform', (d, i) => {
+                                let translate = [i * 150, 0]; // 调整间距
+                                return 'translate(' + translate + ')';
+                            })
+                            .attr('text-anchor', 'middle')
+                            .text(d => d.data.name);
+
+                        svg.append('g').attr('transform', `translate(${w/3  - 100},30)`) // 缩小并上移标题位置
+                            .append('text')
+                            .attr('fill', 'black')
+                            .attr('font-size', 20) // 缩小标题
+                            .text(`运营模式情况`);
+                        break;
+                    }
+                }
+            });
+        }
+
+        function renderBarComplexForWater(){
+            const h = document.getElementById('topleft').clientHeight;
+            const w = document.getElementById('topleft').clientWidth;
+            const svg = d3.select('#topleft')
+                .append('svg')
+                .attr('id', 'electricity_growth')
+                .attr('width', `${w}px`)
+                .attr('height', `${h}px`);
+
+            d3.csv('/Resources/data/water_supply.csv').then(function(data) {
+                data = data.filter(d => d.地区 !== "全国");
+
+                const regions = Array.from(new Set(data.map(d => d.地区)));
+
+                // 重组数据以适应堆叠图格式
+                const formattedData = regions.map(region => {
+                    const regionData = data.find(d => d.地区 === region);
+                    return {
+                        地区: region,
+                        生活用水: +regionData.生活用水,
+                        生产用水: +regionData.生产用水
+                    };
+                });
+
+                const stack = d3.stack()
+                    .keys(['生活用水', '生产用水']);
+
+                const stackedData = stack(formattedData);
+
+                const xScale = d3.scaleBand()
+                    .domain(regions)
+                    .range([0, w - 350])  // 调整宽度以留出空间放置图例
+                    .padding(0.1);
+
+                const yScale = d3.scaleLinear()
+                    .domain([0, d3.max(stackedData[stackedData.length - 1], d => d[1])])
+                    .range([h - 100, 0])
+                    .nice();
+
+                const color = d3.scaleOrdinal()
+                    .domain(['生活用水', '生产用水'])
+                    .range(['#1f77b4', '#2ca02c']);
+
+                const g = svg.append('g')
+                    .attr('transform', `translate(50, 50)`);
+
+                const groups = g.selectAll('g')
+                    .data(stackedData)
+                    .enter()
+                    .append('g')
+                    .attr('fill', d => color(d.key));
+
+                groups.selectAll('rect')
+                    .data(d => d)
+                    .enter()
+                    .append('rect')
+                    .attr('x', d => xScale(d.data.地区))
+                    .attr('y', d => yScale(d[1]))
+                    .attr('height', d => yScale(d[0]) - yScale(d[1]))
+                    .attr('width', xScale.bandwidth());
+
+                const xAxis = d3.axisBottom(xScale);
+                const yAxis = d3.axisLeft(yScale).ticks(10);
+
+                g.append('g')
+                    .attr('transform', `translate(0, ${h - 100})`)
+                    .call(xAxis)
+                    .selectAll('text')
+                    .attr('transform', 'rotate(-40)')
+                    .style('text-anchor', 'end');
+
+                g.append('g').call(yAxis);
+
+                svg.append('g')
+                    .attr('transform', `translate(${w / 2 -250}, 30)`)
+                    .append('text')
+                    .attr('fill', 'black')
+                    .attr('font-size', 20)
+                    .text(`各地区生产用水和生活用水分析`);
+
+                // 添加图例
+                const legend = svg.append('g')
+                    .attr('transform', `translate(${w - 400}, 50)`); // 将图例放在右侧
+
+                const legendData = [
+                    {name: '生活用水(万立方米)', color: '#1f77b4'},
+                    {name: '生产用水(万立方米)', color: '#2ca02c'}
+                ];
+
+                legendData.forEach((d, i) => {
+                    const legendRow = legend.append('g')
+                        .attr('transform', `translate(0, ${i * 20})`);
+
+                    legendRow.append('rect')
+                        .attr('width', 10)
+                        .attr('height', 10)
+                        .attr('fill', d.color);
+
+                    legendRow.append('text')
+                        .attr('x', 20)
+                        .attr('y', 10)
+                        .attr('text-anchor', 'start')
+                        .style('text-transform', 'capitalize')
+                        .text(d.name);
+                });
+            });
+        }
+
+         //轨道交通各城市客运量情况统计
+         function renderTransportationGrowth() {
+            const h = document.getElementById('topleft').clientHeight;
+            const w = document.getElementById('topleft').clientWidth;
+            const svg = d3.select('#topleft')
+                .append('svg')
+                .attr('id', 'electricity_growth')
+                .attr('width', `${w}px`)
+                .attr('height', `${h}px`);
+
+            d3.csv('/Resources/data/public_transportation.csv').then(function(data) {
+                data = data.filter(d => d.地区 !== "全国");
+
+                const regions = Array.from(new Set(data.map(d => d.地区)));
+
+                // 重组数据以适应堆叠图格式
+                const formattedData = regions.map(region => {
+                    const regionData = data.find(d => d.地区 === region);
+                    return {
+                        地区: region,
+                        公共汽电车客运总量: +regionData.公共汽电车客运总量,
+                        轨道交通客运总量: +regionData.轨道交通客运总量
+                    };
+                });
+
+                const stack = d3.stack()
+                    .keys(['公共汽电车客运总量', '轨道交通客运总量']);
+
+                const stackedData = stack(formattedData);
+
+                const xScale = d3.scaleBand()
+                    .domain(regions)
+                    .range([0, w - 200])  // 调整宽度以留出空间放置图例
+                    .padding(0.1);
+
+                const yScale = d3.scaleLinear()
+                    .domain([0, d3.max(stackedData[stackedData.length - 1], d => d[1])])
+                    .range([h - 100, 0])
+                    .nice();
+
+                const color = d3.scaleOrdinal()
+                    .domain(['公共汽电车客运总量', '轨道交通客运总量'])
+                    .range(['#d73027', '#fc8d59']);
+
+                const g = svg.append('g')
+                    .attr('transform', `translate(50, 50)`);
+
+                const groups = g.selectAll('g')
+                    .data(stackedData)
+                    .enter()
+                    .append('g')
+                    .attr('fill', d => color(d.key));
+
+                groups.selectAll('rect')
+                    .data(d => d)
+                    .enter()
+                    .append('rect')
+                    .attr('x', d => xScale(d.data.地区))
+                    .attr('y', d => yScale(d[1]))
+                    .attr('height', d => yScale(d[0]) - yScale(d[1]))
+                    .attr('width', xScale.bandwidth());
+
+                const xAxis = d3.axisBottom(xScale);
+                const yAxis = d3.axisLeft(yScale).ticks(10);
+
+                g.append('g')
+                    .attr('transform', `translate(0, ${h - 100})`)
+                    .call(xAxis)
+                    .selectAll('text')
+                    .attr('transform', 'rotate(-40)')
+                    .style('text-anchor', 'end');
+
+                g.append('g').call(yAxis);
+
+                svg.append('g')
+                    .attr('transform', `translate(${w / 2}, 30)`)
+                    .append('text')
+                    .attr('fill', 'black')
+                    .attr('font-size', 20)
+                    .text(`各地区客运总量分析`);
+
+                // 添加图例
+                const legend = svg.append('g')
+                    .attr('transform', `translate(${w - 300}, 50)`); // 将图例放在右侧
+
+                const legendData = [
+                    {name: '公共汽电车客运总量(万人次)', color: '#d73027'},
+                    {name: '轨道交通客运总量(万人次)', color: '#fc8d59'}
+                ];
+
+                legendData.forEach((d, i) => {
+                    const legendRow = legend.append('g')
+                        .attr('transform', `translate(0, ${i * 20})`);
+
+                    legendRow.append('rect')
+                        .attr('width', 10)
+                        .attr('height', 10)
+                        .attr('fill', d.color);
+
+                    legendRow.append('text')
+                        .attr('x', 20)
+                        .attr('y', 10)
+                        .attr('text-anchor', 'start')
+                        .style('text-transform', 'capitalize')
+                        .text(d.name);
+                });
+            });
+        }
+
+        function renderElectricityAreaChart() {
+            const h = document.getElementById('bottomright').clientHeight; // 获取右下角容器高度
+            const w = document.getElementById('bottomright').clientWidth; // 获取右下角容器宽度
+            const svg = d3.select('#bottomright') // 修改选择器为右下角容器
+                .append('svg')
+                .attr('id', 'electricity_area_chart')
+                .attr('width', `${w}px`)
+                .attr('height', `${h}px`);
+
+            d3.csv('/Resources/data/electricity_usage.csv').then(function(data) {
+                data = data.filter(d => d.地区 !== "总用电量");
+                const years = ['1995', '2000', '2005', '2010', '2015', '2019', '2020'];
+                const regions = Array.from(new Set(data.map(d => d.地区)));
+
+                const stackedData = d3.stack()
+                    .keys(years)
+                    .value((d, key) => +d[key])
+                    .offset(d3.stackOffsetNone)
+                    (data);
+
+                const xScale = d3.scaleBand()
+                    .domain(regions)
+                    .range([0, w - 100]) // 将宽度改为 w - 100
+                    .padding(0.1);
+
+                const yScale = d3.scaleLinear()
+                    .domain([0, d3.max(stackedData, d => d3.max(d, d => d[1]))])
+                    .range([h - 100, 0])
+                    .nice();
+
+                const color = d3.scaleOrdinal(d3.schemeCategory10)
+                    .domain(years);
+
+                const area = d3.area()
+                    .x((d, i) => xScale(d.data.地区) + xScale.bandwidth() / 2) // 将 x 轴位置调整到中心
+                    .y0((d, i) => yScale(d[0]))
+                    .y1((d, i) => yScale(d[1]))
+                    .curve(d3.curveBasis);
+
+                const g = svg.append('g')
+                    .attr('transform', `translate(50, 50)`);
+
+                g.selectAll('path')
+                    .data(stackedData)
+                    .enter()
+                    .append('path')
+                    .attr('d', area)
+                    .attr('fill', d => color(d.key));
+
+                const xAxis = d3.axisBottom(xScale);
+                const yAxis = d3.axisLeft(yScale).ticks(10);
+
+                g.append('g')
+                    .attr('transform', `translate(0, ${h - 100})`)
+                    .call(xAxis)
+                    .selectAll('text')
+                    .attr('transform', 'rotate(-40)')
+                    .style('text-anchor', 'end');
+
+                g.append('g').call(yAxis);
+
+                svg.append('g')
+                    .attr('transform', `translate(${w / 2}, 30)`)
+                    .append('text')
+                    .attr('fill', 'black')
+                    .attr('font-size', 20)
+                    .text(`各地区用电量面积图`);
+
+                // 添加图例
+                const legend = svg.append('g')
+                    .attr('transform', `translate(${w - 150}, 50)`);
+
+                years.forEach((year, i) => {
+                    const legendRow = legend.append('g')
+                        .attr('transform', `translate(0, ${i * 20})`);
+
+                    legendRow.append('rect')
+                        .attr('width', 10)
+                        .attr('height', 10)
+                        .attr('fill', color(year));
+
+                    legendRow.append('text')
+                        .attr('x', 20)
+                        .attr('y', 10)
+                        .attr('text-anchor', 'start')
+                        .style('text-transform', 'capitalize')
+                        .text(year);
+                });
+            });
+        }
+
+        function renderAreaChartForwater() {
+            const h = document.getElementById('bottomright').clientHeight; // 获取右下角容器高度
+            const w = document.getElementById('bottomright').clientWidth; // 获取右下角容器宽度
+            const svg = d3.select('#bottomright') // 修改选择器为右下角容器
+                .append('svg')
+                .attr('id', 'water_area_chart')
+                .attr('width', `${w}px`)
+                .attr('height', `${h}px`);
+
+            d3.csv('/Resources/data/water_supply.csv').then(function(data) {
+                data = data.filter(d => d.地区 !== "全国");
+                const years = ['全年供水总量(万立方米)'];
+                const regions = Array.from(new Set(data.map(d => d.地区)));
+
+                const stackedData = d3.stack()
+                    .keys(years)
+                    .value((d, key) => +d[key])
+                    .offset(d3.stackOffsetNone)
+                    (data);
+
+                const xScale = d3.scaleBand()
+                    .domain(regions)
+                    .range([0, w - 100]) // 将宽度改为 w - 100
+                    .padding(0.1);
+
+                const yScale = d3.scaleLinear()
+                    .domain([0, d3.max(stackedData, d => d3.max(d, d => d[1]))])
+                    .range([h - 100, 0])
+                    .nice();
+
+                const color = d3.scaleOrdinal(d3.schemeCategory10)
+                    .domain(years);
+
+                const area = d3.area()
+                    .x((d, i) => xScale(d.data.地区) + xScale.bandwidth() / 2) // 将 x 轴位置调整到中心
+                    .y0((d, i) => yScale(d[0]))
+                    .y1((d, i) => yScale(d[1]))
+                    .curve(d3.curveBasis);
+
+                const g = svg.append('g')
+                    .attr('transform', `translate(50, 50)`);
+
+                g.selectAll('path')
+                    .data(stackedData)
+                    .enter()
+                    .append('path')
+                    .attr('d', area)
+                    .attr('fill', d => color(d.key));
+
+                const xAxis = d3.axisBottom(xScale);
+                const yAxis = d3.axisLeft(yScale).ticks(10);
+
+                g.append('g')
+                    .attr('transform', `translate(0, ${h - 100})`)
+                    .call(xAxis)
+                    .selectAll('text')
+                    .attr('transform', 'rotate(-40)')
+                    .style('text-anchor', 'end');
+
+                g.append('g').call(yAxis);
+
+                svg.append('g')
+                    .attr('transform', `translate(${w / 2}, 30)`)
+                    .append('text')
+                    .attr('fill', 'black')
+                    .attr('font-size', 20)
+                    .text(`各地区用水总量面积图`);
+
+                // 添加图例
+                const legend = svg.append('g')
+                    .attr('transform', `translate(${w - 150}, 50)`);
+
+                years.forEach((year, i) => {
+                    const legendRow = legend.append('g')
+                        .attr('transform', `translate(0, ${i * 20})`);
+
+                    legendRow.append('rect')
+                        .attr('width', 10)
+                        .attr('height', 10)
+                        .attr('fill', color(year));
+
+                    legendRow.append('text')
+                        .attr('x', 20)
+                        .attr('y', 10)
+                        .attr('text-anchor', 'start')
+                        .style('text-transform', 'capitalize')
+                        .text(year);
+                });
+            });
+        }
+
+        function renderElectricityGrowth() {
+            const h = document.getElementById('topleft').clientHeight;
+            const w = document.getElementById('topleft').clientWidth;
+            const svg = d3.select('#topleft')
+                .append('svg')
+                .attr('id', 'electricity_growth')
+                .attr('width', `${w}px`)
+                .attr('height', `${h}px`);
+
+            d3.csv('/Resources/data/electricity_usage.csv').then(function(data) {
+                data = data.filter(d => d.地区 !== "总用电量");
+                const years = ['1995', '2000', '2005', '2010', '2015', '2019', '2020'];
+                const regions = Array.from(new Set(data.map(d => d.地区)));
+
+                const stackedData = d3.stack()
+                    .keys(years)
+                    .value((d, key) => +d[key])
+                    (data);
+
+                const xScale = d3.scaleBand()
+                    .domain(regions)
+                    .range([0, w - 200])  // 调整宽度以留出空间放置图例
+                    .padding(0.1);
+
+                const yScale = d3.scaleLinear()
+                    .domain([0, d3.max(stackedData, d => d3.max(d, d => d[1]))])
+                    .range([h - 100, 0])
+                    .nice();
+
+                const color = d3.scaleOrdinal(d3.schemeCategory10)
+                    .domain(years);
+
+                const g = svg.append('g')
+                    .attr('transform', `translate(50, 50)`);
+
+                g.selectAll('g')
+                    .data(stackedData)
+                    .enter()
+                    .append('g')
+                    .attr('fill', d => color(d.key))
+                    .selectAll('rect')
+                    .data(d => d)
+                    .enter()
+                    .append('rect')
+                    .attr('x', d => xScale(d.data.地区))
+                    .attr('y', d => yScale(d[1]))
+                    .attr('height', d => yScale(d[0]) - yScale(d[1]))
+                    .attr('width', xScale.bandwidth());
+
+                const xAxis = d3.axisBottom(xScale);
+                const yAxis = d3.axisLeft(yScale).ticks(10);
+
+                g.append('g')
+                    .attr('transform', `translate(0, ${h - 100})`)
+                    .call(xAxis)
+                    .selectAll('text')
+                    .attr('transform', 'rotate(-40)')
+                    .style('text-anchor', 'end');
+
+                g.append('g').call(yAxis);
+
+                svg.append('g')
+                    .attr('transform', `translate(${w / 2}, 30)`)
+                    .append('text')
+                    .attr('fill', 'black')
+                    .attr('font-size', 20)
+                    .text(`各地区用电量增长分析`);
+
+                // 添加图例
+                const legend = svg.append('g')
+                    .attr('transform', `translate(${w - 150}, 50)`); // 将图例放在右侧
+
+                years.forEach((year, i) => {
+                    const legendRow = legend.append('g')
+                        .attr('transform', `translate(0, ${i * 20})`);
+
+                    legendRow.append('rect')
+                        .attr('width', 10)
+                        .attr('height', 10)
+                        .attr('fill', color(year));
+
+                    legendRow.append('text')
+                        .attr('x', 20)
+                        .attr('y', 10)
+                        .attr('text-anchor', 'start')
+                        .style('text-transform', 'capitalize')
+                        .text(year);
+                });
+            });
+        }
+
+        function Urban_Facilities_scatter(province) {
+            
+            const h = document.getElementById('bottomright').clientHeight;
+            const w = document.getElementById('bottomright').clientWidth;
+            const svg = d3.select('#bottomright')
+                .append('svg')
+                .attr('id', 'Facilities_scatter')
+                .attr('width', `${w}px`)
+                .attr('height', `${h}px`);
+
+
+            d3.csv('./Resources/data/urban_facilities-.csv').then(function(data) {
+                const xScale = d3.scaleLinear()
+                    .domain([0, 30])
+                    .range([0, w - 200])
+    
+                const yScale = d3.scaleLinear()
+                    .domain([ 20,5])
+                    .range([0, h - 100])
+
+                    
+                svg.append('g')
+                    .attr('transform', `translate(100,0)`)
+                    .call(d3.axisLeft(yScale).tickSize(0))
+                    .selectAll('text')
+                    .attr('font-size', '16px');
+    
+                svg.append('g')
+                    .attr('transform', `translate(100,${h - 100})`)
+                    .call(d3.axisBottom(xScale).ticks(10))
+                    .selectAll('text')
+                    .attr('font-size', '16px');
+    
+                svg.append('text')
+                    .attr('x', w / 2)
+                    .attr('y', 30)
+                    .attr('text-anchor', 'middle')
+                    .attr('font-size', '20px')
+                    .attr('fill', 'black')
+                    .text(`每万人拥有公共汽电车辆 - 人均城市道路面积`);
+
+
+
+                svg.append("g")
+                    .attr("stroke", "steelblue")
+                    .attr("stroke-width", 1.5)
+                    .attr("fill", "none")
+                    .selectAll("circle")
+                    .data(data)
+                    .join("circle")
+                    .attr("cx", d => xScale (d.人均城市道路面积)+50)
+                    .attr("cy", d => yScale (d.每万人拥有公共汽电车辆))
+                    .attr("r", 3);
+
+
+                    svg.append("g")
+                    .attr("font-family", "sans-serif")
+                    .attr("font-size", 10)
+                    .selectAll("text")
+                    .data(data)
+                    .join("text")
+                    .attr("dy", "0.35em")
+                    .attr("x", d => xScale (d.人均城市道路面积)+57)
+                    .attr("y", d => yScale (d.每万人拥有公共汽电车辆))
+                    .text(d => d.地区);
+            });
+
+        }
+        function Urban_Facilities_bar(province) {
+        const h = document.getElementById('topright').clientHeight;
+        const w = document.getElementById('topright').clientWidth;
+        const svg = d3.select('#topright')
+            .append('svg')
+            .attr('id', 'Facilities_bar')
+            .attr('width', `${w}px`)
+            .attr('height', `${h}px`);
+        d3.csv('./Resources/data/urban_facilities.csv').then(function(data) {
+            const provinceData = data.find(d => d.地区 === province);
+            if (!provinceData) return;
+
+            const dataset = [
+                { name: '供水', value: +provinceData['城市供水普及率(%)'] },
+                { name: '燃气', value: +provinceData['城市燃气普及率(%)'] },
+                { name: '公交车', value: +provinceData['每万人拥有公共汽电车辆(标台)'] },
+                { name: '道路', value: +provinceData['人均城市道路面积(平方米)'] },
+                { name: '绿地', value: +provinceData['人均公园绿地面积(平方米)'] },
+                { name: '厕所', value: +provinceData['每万人拥有公共厕所(座)'] }
+            ];
+
+            const maxValue = d3.max(dataset, d => d.value);
+            const xScale = d3.scaleLinear()
+                .domain([0, maxValue])
+                .range([0, w - 200])
+                .nice();
+
+            const yScale = d3.scaleBand()
+                .domain(dataset.map(d => d.name))
+                .range([0, h - 100])
+                .padding(0.1);
+
+            const colorScale = d3.scaleOrdinal(d3.schemeCategory10)
+                .domain(dataset.map(d => d.name));
+
+            svg.append('g')
+                .selectAll('rect')
+                .data(dataset)
+                .enter()
+                .append('rect')
+                .attr('x', 100)
+                .attr('y', d => yScale(d.name))
+                .attr('width', d => xScale(d.value))
+                .attr('height', yScale.bandwidth())
+                .attr('fill', d => colorScale(d.name));
+
+            svg.append('g')
+                .attr('transform', `translate(100,0)`)
+                .call(d3.axisLeft(yScale).tickSize(0))
+                .selectAll('text')
+                .attr('font-size', '16px');
+
+            svg.append('g')
+                .attr('transform', `translate(100,${h - 100})`)
+                .call(d3.axisBottom(xScale).ticks(10))
+                .selectAll('text')
+                .attr('font-size', '16px');
+
+            svg.append('text')
+                .attr('x', w / 2)
+                .attr('y', 30)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '20px')
+                .attr('fill', 'black')
+                .text(`${province} - 城市设施普及率`);
+        });
+    }
+
+         //绘制地图模块
+         function renderMap(year, type) {
+            const h = document.getElementById('topleft').clientHeight;
+            const w = document.getElementById('topleft').clientWidth;
+            const svg = d3.select('#topleft')
+                .append('svg')
+                .attr('id', 'map')
+                .attr('width', `${w}px`)
+                .attr('height', `${h}px`);
+
+            const margin = {
+                top: 10,
+                left: 10,
+                bottom: 10,
+                right: 10
+            };
+            const innerWidth = w - margin.left - margin.right;
+            const innerHeight = h - margin.top - margin.bottom;
+
+            const projection = d3.geoMercator()
+                .center([103, 39])
+                .scale(600)
+                .translate([innerWidth / 2, innerHeight / 2]);
+
+            const path = d3.geoPath().projection(projection);
+            const colors = d3.scaleOrdinal(d3.schemeCategory10);
+
+            // 检查 year 是否是数字
+            if (!isNaN(year)) {
+                svg.append('g').attr('transform', `translate(${w / 2-50},${h / 2-185})`)
+                    .append('rect')
+                    .attr('fill', "#40d8ab")
+                    .attr('width', '110')
+                    .attr('height', '50');
+
+                svg.append('g').attr('transform', `translate(${w / 2-45},${h / 2-150})`)
+                    .append('text')
+                    .attr('fill', '#faf7f4')
+                    .attr('font-size', 30)
+                    .text(`${year}年`);
+            }
+
+            d3.json('./Resources/data/china.geojson').then(data => {
+                svg.selectAll('path')
+                    .data(data.features)
+                    .enter()
+                    .append('path')
+                    .attr('d', path)
+                    .attr('opacity', 0.6)
+                    .attr('fill', '#7f8efd')
+                    .attr('stroke', '#fff')
+                    .attr('stroke-width', 1)
+                    .on('mouseenter', function(d) {
+                        d3.select(this).attr('opacity', 1);
+                        province = d3.select(this)._groups[0][0].__data__.properties.name;
+                        d3.select("#pie").remove();
+                        d3.select('#bar2').remove();
+                        tooltip.style('visibility', 'visible')
+                            .style('left', `${d3.pointer(event)[0] + margin.left + 20 + 'px'}`)
+                            .style('top', `${d3.pointer(event)[1] + margin.top + 'px'}`);
+                        if (type === 'population') {
+                            renderbar2(province);
+                            Regional_data_population(province, year, svg, path);
+                        } else if (type === 'electricity') {
+                            Regional_data_electricity(province, year, svg, path);
+                            draw_electricity_LineChart(province);
+                        } else if (type === 'transportation') {
+                            Regional_data_transportation(province, year, svg, path); // 添加这行
+                            renderPieForTransportation(province);
+                        } else if (type === 'facilities') {
+                            Regional_data_urban_facilities(province, year, svg, path);
+                            d3.select("#Facilities_bar").remove(); // 清除之前的柱状图
+                            Urban_Facilities_bar(province);
+                        } else if (type === 'water_supply') {
+                            Regional_data_water_supply(province, year, svg, path);
+                            renderPieForWater(province);
+                        }
+                    })
+                    .on('mouseleave', function(d) {
+                        d3.select(this).attr('opacity', 0.6);
+                        tooltip.style('visibility', 'hidden');
+                    });
+            });
+        }
+
+        // 折线图和柱状图
+        function renderline() {
+            const h = document.getElementById('topright').clientHeight
+            const w = document.getElementById('topright').clientWidth
+            const svg = d3.select('#topright')
+                .append('svg')
+                .attr('id', 'line')
+                .attr('width', `${w}px`)
+                .attr('height', `${h}px`)
+
+            d3.csv('./Resources/data/population_rate.csv').then(function(data) {
+                const maxValue = 160000
+                const maxvaluel = 3
+                const years = d3.map(data, d => d.年份)
+                const height = 300
+                const width = 400
+                const yScale = d3.scaleLinear()
+                    .domain([0, maxValue])
+                    .range([height, 0])
+                    .nice()
+                const yScalel = d3.scaleLinear()
+                    .domain([0, maxvaluel])
+                    .range([height, 0])
+                    .nice()
+
+                const xScale = d3.scaleBand()
+                    .domain(years)
+                    .range([0, width])
+                    .padding(0.05)
+
+                const g = svg.append('g').attr('transform', `translate(${100} ,${50})`)
+
+                g.selectAll('rect')
+                    .data(data)
+                    .enter()
+                    .append('rect')
+                    .attr('x', d => xScale(d.年份))
+                    .attr('width', d => xScale.bandwidth())
+                    .attr('height', function(d) {
+                        setdata = d.总人口
+                        da = setdata / maxValue * height
+                        return da
+                    })
+                    .attr('transform', (d, i) => {
+                        let translate = [0, height - d.总人口 / maxValue * height]
+                        return 'translate(' + translate + ')'
+                    })
+                    .attr('fill', '#417568')
+                    .on('mouseenter', function(d) {
+                        d3.select(this).attr('fill', '#d98214')
+                        d3.select('#rose').remove()
+                        d3.select('#map').remove()
+                        const year = d3.select(this)._groups[0][0].__data__.年份
+                        renderCom(year)
+                        renderMap(year)
+                    })
+                    .on('mouseleave', function() {
+                        d3.select(this).attr('fill', '#417568')
+                    })
+
+                g.selectAll('text')
+                    .data(data)
+                    .enter()
+                    .append('text')
+                    .attr('fill', 'white')
+                    .attr('font-size', '14px')
+                    .attr('x', d => xScale(d.年份) - 20)
+                    .attr('y', function(d) {
+                        return height - d.总人口 / maxValue * height
+                    })
+                    .attr('dx', xScale.bandwidth() / 2)
+                    .attr('dy', '1em')
+                    .text(d => d.总人口)
+
+                const xAxis = d3.axisBottom(xScale).ticks(5) //.tickFormat(d3.format('.0%'))
+                const yAxis = d3.axisLeft(yScale).tickSize(5).ticks(10) //Y轴
+                const yAxisl = d3.axisRight(yScalel).tickSize(5).ticks(5)
+
+                g.append('g').attr('transform', `translate(0, ${height})`).call(xAxis)
+                g.append('g').call(yAxis)
+                g.append('g').call(yAxisl).attr('transform', `translate(${width},0)`)
+
+                d3.selectAll('.tick text').attr('font-size', '16px')
+
+                g.append('g').selectAll('circle')
+                    .data(data)
+                    .enter()
+                    .append('circle')
+                    .attr('r', 3)
+                    .attr('cx', function(d, i) {
+                        return width / 7 * i + width / 14
+                    })
+                    .attr('cy', function(d) {
+                        return height - d.增长率 / maxvaluel * height
+                    })
+
+                const lineGenerator = d3.line()
+                    .x(function(d, i) {
+                        return width / 7 * i + width / 14
+                    })
+                    .y(function(d) {
+                        return height - d.增长率 / maxvaluel * height
+                    })
+
+                g.append('g').append('path') //绘制直线通过path元素实现       
+                    .attr('d', lineGenerator(data)) //调用生成器实例，按照数据顺序生成线段 
+                    .attr('fill', 'none') //需要设置填充属性，否则会自动填充
+                    .attr('stroke', 'red')
+                    .attr('stroke-width', 2)
+
+                g.append('g').selectAll('text')
+                    .data(data)
+                    .enter()
+                    .append('text')
+                    .attr('fill', 'black')
+                    .attr('font-size', '14px')
+                    .attr('x', function(d, i) {
+                        return width / 7 * i + width / 14
+                    })
+                    .attr('y', function(d) {
+                        return height - d.增长率 / maxvaluel * height
+                    })
+                    .text(d => d.增长率)
+
+                d3.select("#line").append('g').attr('transform', `translate(${w / 2+150},${h / 2-170})`)
+                    .append('text')
+                    .attr('fill', 'black')
+                    .attr('font-size', 20)
+                    .text('增长率（%）')
+                d3.select("#line").append('g').attr('transform', `translate(${w / 2-300},${h / 2-170})`)
+                    .append('text')
+                    .attr('fill', 'black')
+                    .attr('font-size', 20)
+                    .text('总人口（万人）')
+            })
+        }
+
+
+        // 绘制饼图模块
+        function renderCom(year) {
+            const h = document.getElementById('bottomleft').clientHeight
+            const w = document.getElementById('bottomleft').clientWidth
+            const svg = d3.select('#bottomleft')
+                .append('svg')
+                .attr('id', 'rose')
+                .attr('width', `${w}px`)
+                .attr('height', `${h}px`)
+
+            d3.csv('./Resources/data/population_rate.csv').then(function(data) {
+                for (i in data) {
+                    if (data[i].年份 == year) {
+                        const pie = d3.pie()
+                            .value(d => d.value)
+                            .sort(null)
+                            .padAngle(0.02)
+
+                        //受教育程度
+                        const color = d3.scaleOrdinal(d3.schemeCategory10)
+                        const length = 4 //圆弧数量
+                        const per = 2 * Math.PI / length
+                        const pieData = [data[i].大学, data[i].高中, data[i].初中, data[i].小学]
+                        const sum = d3.sum(pieData)
+                        const start = [0, +data[i].大学, +data[i].高中, +data[i].初中]
+                        const end = [+data[i].大学, +data[i].高中, +data[i].初中, sum]
+                        const dataset1 = [{
+                            name: `大学`,
+                            value: data[i].大学,
+                            ratio: `${Math.round((+data[i].大学)/(+sum)*10000)/100}%`
+                        }, {
+                            name: `高中`,
+                            value: data[i].高中,
+                            ratio: `${Math.round((+data[i].高中)/(+sum)*10000)/100}%`
+                        }, {
+                            name: `初中`,
+                            value: data[i].初中,
+                            ratio: `${Math.round((+data[i].初中)/(+sum)*10000)/100}%`
+                        }, {
+                            name: `小学`,
+                            value: data[i].小学,
+                            ratio: `${Math.round((+data[i].小学)/(+sum)*10000)/100}%`
+                        }]
+                        const dataset = d3.range(length).map(function(i) {
+                            return {
+                                innerRadius: 45,
+                                outerRadius: 45 + 15 * (i + 1),
+                                startAngle: 2 * Math.PI * start[i] / sum,
+                                endAngle: 2 * Math.PI * end[i] / sum
+                            }
+                        })
+
+                        const color1 = ['#e36f30', '#ad5852', '#724669', '#898aa5']
+                        const RoseChart1 = svg.append('g')
+                            .attr('transform', 'translate(130,180)')
+                        const pie_data1 = pie(dataset1)
+
+                        const arc1 = d3.arc()
+                            .outerRadius(100)
+                            .innerRadius(50)
+                            .cornerRadius(5)
+                        const slices1 = RoseChart1.selectAll('path')
+                            .data(pie_data1)
+                            .enter()
+                            .append('path')
+                            .attr('fill', function(d, i) {
+                                return color1[d.index]
+                            })
+                            .attr('d', d => arc1(d))
+
+                        const label1 = RoseChart1.selectAll('text')
+                            .data(pie_data1)
+                            .enter()
+                            .append('text')
+                            .attr('fill', 'black')
+                            .attr('transform', d => `translate(${arc1.centroid(d)})`) //计算平面质心位置
+                            .attr('text-anchor', 'middle')
+                            .text(d => d.data.ratio)
+
+                        const tips1 = svg.append('g')
+                            .attr('transform', 'translate(50,40)')
+                        const tip1 = tips1.selectAll('rect')
+                            .data(pie_data1)
+                            .enter()
+                            .append('rect')
+                            .attr('fill', function(d, i) {
+                                return color1[i]
+                            })
+                            .attr('width', '40')
+                            .attr('height', '30')
+                            .attr('transform', (d, i) => {
+                                let translate = [i * 40, 0]
+                                return 'translate(' + translate + ')'
+                            })
+                        const tip_text1 = svg.append('g').attr('transform', 'translate(70,60)').selectAll('text')
+                            .data(pie_data1)
+                            .enter()
+                            .append('text')
+                            .attr('fill', 'white')
+                            .attr('transform', (d, i) => {
+                                let translate = [i * 40, 0]
+                                return 'translate(' + translate + ')'
+                            })
+                            .attr('text-anchor', 'middle')
+                            .text(d => d.data.name)
+                        d3.select("#rose").append('g').attr('transform', `translate(${w / 2-440},${h / 2+40})`)
+                            .append('text')
+                            .attr('fill', 'black')
+                            .attr('font-size', 30)
+                            .text(`教育`)
+
+                        //年龄比
+                        const dataset2 = [{
+                            name: `14岁及以下`,
+                            value: data[i].十四岁及以下,
+                            ratio: `${data[i].十四岁及以下}%`
+                        }, {
+                            name: `15岁到59岁`,
+                            value: data[i].十五岁到五十九岁,
+                            ratio: `${data[i].十五岁到五十九岁}%`
+                        }, {
+                            name: `60岁及以上`,
+                            value: data[i].六十岁及以上,
+                            ratio: `${data[i].六十岁及以上}%`
+                        }]
+
+                        const PieGroup = svg.append('g')
+                            .attr('transform', 'translate(400,180)')
+
+
+
+                        const pie_data2 = pie(dataset2)
+
+                        const arc2 = d3.arc()
+                            .outerRadius(100)
+                            .innerRadius(50)
+                            .cornerRadius(5)
+                        const color2 = ['#7ec9b0', '#428872', '#d98214']
+                        const slices = PieGroup.selectAll('path')
+                            .data(pie_data2)
+                            .enter()
+                            .append('path')
+                            .attr('fill', function(d, i) {
+                                return color2[d.index]
+                            })
+                            .attr('d', d => arc2(d))
+
+                        const labels = PieGroup.selectAll('text')
+                            .data(pie_data2)
+                            .enter()
+                            .append('text')
+                            .attr('fill', 'black')
+                            .attr('transform', d => `translate(${arc2.centroid(d)})`) //计算平面质心位置
+                            .attr('text-anchor', 'middle')
+                            .text(d => d.data.ratio)
+
+                        const tips = svg.append('g')
+                            .attr('transform', 'translate(270,40)')
+                        const tip2 = tips.selectAll('rect')
+                            .data(pie_data2)
+                            .enter()
+                            .append('rect')
+                            .attr('fill', function(d, i) {
+                                return color2[i]
+                            })
+                            .attr('width', '90')
+                            .attr('height', '30')
+                            .attr('transform', (d, i) => {
+                                let translate = [i * 90, 0]
+                                return 'translate(' + translate + ')'
+                            })
+                        const tip_text2 = svg.append('g').attr('transform', 'translate(310,60)').selectAll('text')
+                            .data(pie_data2)
+                            .enter()
+                            .append('text')
+                            .attr('fill', 'white')
+                            .attr('transform', (d, i) => {
+                                let translate = [i * 90, 0]
+                                return 'translate(' + translate + ')'
+                            })
+                            .attr('text-anchor', 'middle')
+                            .text(d => d.data.name)
+                        d3.select("#rose").append('g').attr('transform', `translate(${w / 2-170},${h / 2+30})`)
+                            .append('text')
+                            .attr('fill', 'black')
+                            .attr('font-size', 30)
+                            .text(`年龄`)
+
+
+
+                        //性别比
+                        const datasetp3 = [{
+                            name: `男`,
+                            value: data[i].男,
+                            ratio: `${Math.round(+data[i].男/(+data[i].男+(+data[i].女))*10000)/100}%`
+                        }, {
+                            name: `女`,
+                            value: data[i].女,
+                            ratio: `${Math.round(+data[i].女/(+data[i].男+(+data[i].女))*10000)/100}%`
+                        }]
+
+                        const PieGroup3 = svg.append('g')
+                            .attr('transform', 'translate(650,180)')
+
+                        const pie_data3 = pie(datasetp3) //用数据实例化饼图生成器
+
+                        const arc3 = d3.arc()
+                            .outerRadius(100)
+                            .innerRadius(50)
+                            .cornerRadius(5)
+
+                        const color3 = ['#43a2a9', '#e47e60']
+                        const slices3 = PieGroup3.selectAll('path')
+                            .data(pie_data3)
+                            .enter()
+                            .append('path')
+                            .attr('fill', function(d, i) {
+                                return color3[d.index]
+                            })
+                            .attr('d', d => arc3(d))
+
+                        const labels3 = PieGroup3.selectAll('text')
+                            .data(pie_data3)
+                            .enter()
+                            .append('text')
+                            .attr('fill', 'black')
+                            .attr('transform', d => `translate(${arc3.centroid(d)})`) //计算平面质心位置
+                            .attr('text-anchor', 'middle')
+                            .text(d => d.data.ratio)
+
+                        const tips3 = svg.append('g')
+                            .attr('transform', 'translate(600,40)')
+                        const tip3 = tips3.selectAll('rect')
+                            .data(pie_data3)
+                            .enter()
+                            .append('rect')
+                            .attr('fill', function(d, i) {
+                                return color3[i]
+                            })
+                            .attr('width', '50')
+                            .attr('height', '30')
+                            .attr('transform', (d, i) => {
+                                let translate = [i * 50, 0]
+                                return 'translate(' + translate + ')'
+                            })
+                        const tip_text3 = svg.append('g').attr('transform', 'translate(620,60)').selectAll('text')
+                            .data(pie_data3)
+                            .enter()
+                            .append('text')
+                            .attr('fill', 'white')
+                            .attr('transform', (d, i) => {
+                                let translate = [i * 50, 0]
+                                return 'translate(' + translate + ')'
+                            })
+                            .attr('text-anchor', 'middle')
+                            .text(d => d.data.name)
+                        d3.select("#rose").append('g').attr('transform', `translate(${w / 2+80},${h / 2+30})`)
+                            .append('text')
+                            .attr('fill', 'black')
+                            .attr('font-size', 30)
+                            .text(`性别`)
+
+                        
+                    }
+                }
+            })
+        }
+
+        // 绘制供水情况的饼图模块
+        function renderPieForWater(province) {
+            const width = 400;
+            const height = 400;
+            const margin = { top: 50, right: 50, bottom: 50, left: 50 };
+
+            // 移除之前的SVG容器和所有子元素
+            d3.select('#topright').selectAll('svg').remove();
+
+            // 创建新的SVG容器
+            const svg = d3.select('#topright')
+                .append('svg')
+                .attr('id', 'line') // 设置SVG的ID为line
+                .attr('width', width + margin.left + margin.right) // 设置SVG宽度
+                .attr('height', height + margin.top + margin.bottom); // 设置SVG高度
+
+            d3.csv('./Resources/data/water_supply.csv').then(function(data) {
+                for (let i in data) {
+                    if (data[i].地区 == province) {
+                        const pie = d3.pie()
+                            .value(d => d.value)
+                            .sort(null)
+                            .padAngle(0.02);
+
+                        const color = d3.scaleOrdinal(d3.schemeCategory10);
+                        const length = 2; // 圆弧数量
+                        const pieData = [data[i].生活用水, data[i].生产用水];
+                        const sum = d3.sum(pieData);
+                        const dataset1 = [{
+                            name: `生活用水`,
+                            value: data[i].生活用水,
+                            ratio: `${Math.round((+data[i].生活用水) / (+sum) * 10000) / 100}%`
+                        }, {
+                            name: `生产用水`,
+                            value: data[i].生产用水,
+                            ratio: `${Math.round((+data[i].生产用水) / (+sum) * 10000) / 100}%`
+                        }];
+
+                        const color1 = ['#1f77b4', '#2ca02c']; // 使用蓝色相关的颜色
+                        const RoseChart1 = svg.append('g')
+                            .attr('transform', 'translate(250,200)'); // 向右移动并稍微放大饼图位置
+                        const pie_data1 = pie(dataset1);
+
+                        const arc1 = d3.arc()
+                            .outerRadius(120) // 稍微放大饼图
+                            .innerRadius(60)
+                            .cornerRadius(5);
+
+                        const slices1 = RoseChart1.selectAll('path')
+                            .data(pie_data1)
+                            .enter()
+                            .append('path')
+                            .attr('fill', function(d, i) {
+                                return color1[d.index];
+                            })
+                            .attr('d', d => arc1(d));
+
+                        const label1 = RoseChart1.selectAll('text')
+                            .data(pie_data1)
+                            .enter()
+                            .append('text')
+                            .attr('fill', 'black')
+                            .attr('transform', d => `translate(${arc1.centroid(d)})`) // 计算平面质心位置
+                            .attr('text-anchor', 'middle')
+                            .text(d => d.data.ratio);
+
+                        const tips1 = svg.append('g')
+                            .attr('transform', 'translate(50,40)');
+                        const tip1 = tips1.selectAll('rect')
+                            .data(pie_data1)
+                            .enter()
+                            .append('rect')
+                            .attr('fill', function(d, i) {
+                                return color1[i];
+                            })
+                            .attr('width', '70')
+                            .attr('height', '30')
+                            .attr('transform', (d, i) => {
+                                let translate = [i * 70, 0]; // 调整间距
+                                return 'translate(' + translate + ')';
+                            });
+                            
+                        const tip_text1 = svg.append('g').attr('transform', 'translate(80,60)').selectAll('text')
+                            .data(pie_data1)
+                            .enter()
+                            .append('text')
+                            .attr('fill', 'white')
+                            .attr('transform', (d, i) => {
+                                let translate = [i * 70, 0]; // 调整间距
+                                return 'translate(' + translate + ')';
+                            })
+                            .attr('text-anchor', 'middle')
+                            .text(d => d.data.name);
+
+                        svg.append('g').attr('transform', `translate(${w/3  - 100},30)`) // 缩小并上移标题位置
+                            .append('text')
+                            .attr('fill', 'black')
+                            .attr('font-size', 20) // 缩小标题
+                            .text(`用水情况`);
+                        break;
+                    }
+                }
+            });
+        }
+
+        // 绘制条形图模块
+        function renderbar2(province) {   
+            const h = document.getElementById('bottomright').clientHeight
+            const w = document.getElementById('bottomright').clientWidth + 40
+            const svg = d3.select('#bottomright')
+                .append('svg')
+                .attr('id', 'bar2')
+                .attr('width', `${w}px`)
+                .attr('height', `${h}px`)
+            d3.csv('./Resources/data/jths.csv').then(function(data) {
+                for (i in data) {
+                    if (data[i].地区 == province) {
+                        //绘图
+                        const maxValueb = 3000
+                        d3.select("#bar2").append('g').attr('transform', `translate(${w / 2+150},${h / 2-50})`)
+                            .append('text')
+                            .attr('fill', 'black')
+                            .attr('font-size', 30)
+                            .text(`${province}`)
+                        const dataset = [{
+                            name: '流入',
+                            value: data[i].流入
+                        }, {
+                            name: '流出',
+                            value: data[i].流出
+                        }]
+
+                        const hushu = d3.map(dataset, data => data.name)
+                        const barHeightb = 200
+                        const xScaleb = d3.scaleLinear()
+                            .domain([0, maxValueb])
+                            .range([0, 600])
+                            .nice() //刻度优化
+                        d3.select("#bar2").append('g').attr('transform', `translate(${xScaleb(data[i].流出)+100},${h / 2-50})`)
+                            .append('text')
+                            .attr('fill', 'black')
+                            .attr('font-size', 20)
+                            .text(`${data[i].流出}万人`)
+                        d3.select("#bar2").append('g').attr('transform', `translate(${xScaleb(data[i].流入)+100},${h / 2+50})`)
+                            .append('text')
+                            .attr('fill', 'black')
+                            .attr('font-size', 20)
+                            .text(`${data[i].流入}万人`)
+                        const yScaleb = d3.scaleBand()
+                            .domain(hushu)
+                            .range([barHeightb, 0])
+                            .padding(0.05)
+                        const g = svg.append('g').attr('transform', `translate(${w/2-300}, ${h/2-100})`)
+                        const color5 = ['#215182', '#3a84cf']
+                        g.selectAll('rect')
+                            .data(dataset)
+                            .enter()
+                            .append('rect')
+                            .attr('x', 0)
+                            .attr('y', d => yScaleb(d.name))
+                            .attr('width', function(d) {
+                                return d.value / maxValueb * 600
+                            })
+                            .attr('height', yScaleb.bandwidth())
+                            .attr('fill', function(d, i) {
+                                return color5[i]
+                            })
+
+                        const xAxisb = d3.axisBottom(xScaleb).ticks(10)
+                        const yAxisb = d3.axisLeft(yScaleb).tickSize(0)
+
+                        //绘制坐标轴
+                        g.append('g').attr('transform', `translate(0, ${barHeightb})`).call(xAxisb)
+                        g.append('g').call(yAxisb)
+
+                        //设置坐标轴文本字体大小
+                        d3.selectAll('.tick text').attr('font-size', '16px')
+
+                        break
+                    }
+                }
+            })
+        }  
+    </script>
+</body>
+
+</html>
